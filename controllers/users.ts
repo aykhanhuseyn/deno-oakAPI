@@ -50,12 +50,20 @@ export const createUser = async (
   { request, response }: { request: any; response: any },
 ) => {
   const body = await request.body();
-  let requestUser: UserCreate = body.value;
-  const id = v4.generate();
-  const newUser: User = { id, ...requestUser };
-  users.set(id, newUser);
-  response.body = newUser;
-  response.status = 201; //created
+  if (!request.hasBody) {
+    response.body = {
+      message:
+        "We didn't get the body. Please, correct your request and try again.",
+    };
+    response.status = 204; //no content
+  } else {
+    let requestUser: UserCreate = body.value;
+    const id = v4.generate();
+    const newUser: User = { id, ...requestUser };
+    users.set(id, newUser);
+    response.body = newUser;
+    response.status = 201; //created
+  }
 };
 
 /**
@@ -72,19 +80,24 @@ export const updateUser = async (
 ) => {
   if (params && v4.validate(params?.id) && users.has(params?.id)) {
     const body = await request.body();
-    const requestUser: UserPatch = body.value;
-    let userToUpdate = users.get(params.id)!;
-    userToUpdate = {
-      ...userToUpdate,
-      ...requestUser,
-      id: userToUpdate.id,
-      username: userToUpdate.username,
-    };
-    users.set(params.id, userToUpdate);
-    response.body = userToUpdate;
-    response.status = 200;
+    if (!request.hasBody) {
+      response.body = {
+        message:
+          "We didn't get the body. Please, correct your request and try again.",
+      };
+      response.status = 204; //no content
+    } else {
+      const requestUser: UserPatch = body.value;
+      let userToUpdate = { ...users.get(params.id)!, ...requestUser };
+      users.set(params.id, userToUpdate);
+      response.body = userToUpdate;
+      response.status = 200;
+    }
   } else {
-    response.body = null;
+    response.body = {
+      message:
+        "We didn't found the ID you have requested in out database. Please, check ID and send your request again.",
+    };
     response.status = 204; //no content
   }
 };
@@ -103,5 +116,9 @@ export const deleteUser = (
 ) => {
   let status = v4.validate(params?.id) && users.delete(params?.id);
   response.status = status ? 200 : 404;
-  response.body = Array.from(users.values());
+  response.body = {
+    message: status
+      ? "User successfully deleted"
+      : "Something went wrong. Please, check the ID and send request again.",
+  };
 };

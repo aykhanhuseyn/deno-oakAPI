@@ -7,8 +7,6 @@ app.use(async (context: any, next: any) => {
   await next();
   console.log("METHOD:", context.request.method);
   console.log("URL:", context.request.url);
-  console.log("PARAMS:", context.request.params);
-  console.log("BODY:", context.request.body());
 });
 
 app.use(router.routes());
