@@ -1,1 +1,1 @@
-export * as userController from "./users";
+export * as userController from "./users.ts";

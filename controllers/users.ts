@@ -1,6 +1,6 @@
-import { users } from "../data";
-import { v4 } from "../deps";
-import { UserCreate, User, UserPatch } from "../models";
+import { users } from "../data/index.ts";
+import { v4 } from "../deps/index.ts";
+import { UserCreate, User, UserPatch } from "../models/index.ts";
 
 /**
  * @description         Get all users 
@@ -22,13 +22,17 @@ export const getUsers = ({ response }: { response: any }) => {
  * @method              GET 
  */
 export const getUserById = (
-  { response, params }: { response: any; params: any },
+  { response, params }: { response: any; params: { id: string } },
 ) => {
-  if (params && v4.validate(params?.id) && users.has(params.id)) {
+  if (params && v4.validate(params.id) && users.has(params.id)) {
+    console.log("prm", params);
     response.body = users.get(params.id);
     response.status = 200;
   } else {
-    response.body = null;
+    response.body = {
+      message:
+        "ID you have sent is not correct. Please, check id and try again.",
+    };
     response.status = 404;
   }
 };
@@ -45,7 +49,8 @@ export const getUserById = (
 export const createUser = async (
   { request, response }: { request: any; response: any },
 ) => {
-  const requestUser: UserCreate = await request.body;
+  const body = await request.body();
+  let requestUser: UserCreate = body.value;
   const id = v4.generate();
   const newUser: User = { id, ...requestUser };
   users.set(id, newUser);
@@ -63,11 +68,12 @@ export const createUser = async (
  * @returns             updated user 
  */
 export const updateUser = async (
-  { params, request, response }: { params: any; request: any; response },
+  { params, request, response }: { params: any; request: any; response: any },
 ) => {
   if (params && v4.validate(params?.id) && users.has(params?.id)) {
-    const requestUser: UserPatch = await request.body;
-    let userToUpdate = users.get(params.id);
+    const body = await request.body();
+    const requestUser: UserPatch = body.value;
+    let userToUpdate = users.get(params.id)!;
     userToUpdate = {
       ...userToUpdate,
       ...requestUser,
@@ -92,7 +98,9 @@ export const updateUser = async (
  * @method              DELETE 
  * @returns             users 
  */
-export const deleteUser = ({ params, response }) => {
+export const deleteUser = (
+  { params, response }: { params: any; response: any },
+) => {
   let status = v4.validate(params?.id) && users.delete(params?.id);
   response.status = status ? 200 : 404;
   response.body = Array.from(users.values());
